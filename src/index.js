@@ -3,7 +3,6 @@ export default ((window) => {
 
   const render = (data = [], parent = document.createDocumentFragment()) => {
     let tagName = 'div'
-    data = Array.from(data)
 
     if (!data.length) {
       return parent
@@ -14,7 +13,8 @@ export default ((window) => {
     }
 
     parent.appendChild(
-      data
+      [...data]
+        .filter(entry => entry)
         .reduce(
           (element, entry) => {
             if (typeof entry === 'string') {
