@@ -15,7 +15,7 @@
     "test:watch": "jest --watch",
     "eslint": "eslint src",
     "precommit": "npm run eslint",
-    "prepush": "npm run test:coverage"
+    "prepush": "npm run test:coverage -- --silent"
   },
   "repository": {
     "type": "git",
