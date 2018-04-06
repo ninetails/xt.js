@@ -1,24 +1,62 @@
-const render = (arr, parent = global.createDocumentFragment(), window = window || global) =>
-  Array.from(arr)
-    .reduce((p, data) => {
-      if (~['string', 'number'].indexOf(typeof data)) {
-        return p.appendChild(window.document.createTextNode(data))
-      }
+export default ((window) => {
+  const { document, Node } = window
 
-      if (typeof data === 'object') {
-        return Object.entries(data).forEach(([key, value]) => {
-          switch (key) {
-            case 'className':
-              p.setAttribute('class', value)
-              break
-            default:
-              p.setAttribute(key, value)
-          }
-        })
-      }
+  const render = (data = [], parent = document.createDocumentFragment()) => {
+    let tagName = 'div'
+    data = Array.from(data)
 
-      const tag = data.shift()
-      return p.appendChild(render(data, window.document.createElement(tag)))
-    }, parent)
+    if (!data.length) {
+      return parent
+    }
 
-export default render
+    if (data[0] && typeof data[0] === 'string') {
+      tagName = data.shift()
+    }
+
+    parent.appendChild(
+      data
+        .reduce(
+          (element, entry) => {
+            if (typeof entry === 'string') {
+              element.appendChild(document.createTextNode(entry))
+              return element
+            }
+
+            if (entry instanceof Node) {
+              element.appendChild(entry)
+              return element
+            }
+
+            if (entry instanceof Array) {
+              return render(entry, element)
+            }
+
+            Object.keys(entry)
+              .forEach(name => {
+                switch (name) {
+                  case 'className':
+                    element.setAttribute('class', entry[name])
+                    break
+                  case 'style':
+                    Object.assign(element.style, entry.style)
+                    break
+                  case 'on':
+                    Object.keys(entry.on)
+                      .forEach(eventName => element.addEventListener(eventName, entry.on[eventName]))
+                    break
+                  default:
+                    element.setAttribute(name, entry[name])
+                }
+              })
+
+            return element
+          },
+          document.createElement(tagName)
+        )
+    )
+
+    return parent
+  }
+
+  return render
+})(window || global)
