@@ -1,15 +1,27 @@
+const isString = thing =>
+  typeof thing === 'string'
+
 export default ((window) => {
-  const { document, Node } = window
+  const { document, DocumentFragment, Node } = window
+
+  const isNode = thing =>
+    thing instanceof Node
+
+  const isDocFrag = thing =>
+    thing instanceof DocumentFragment
 
   const render = (data = [], parent = document.createDocumentFragment()) => {
-    let tagName = 'div'
-
     if (!data.length) {
       return parent
     }
 
-    if (data[0] && typeof data[0] === 'string') {
-      tagName = data.shift()
+    let tag
+    if (isString(data[0])) {
+      tag = document.createElement(data.shift())
+    } else if (isNode(data[0]) && !isDocFrag(data[0])) {
+      tag = data.shift()
+    } else {
+      tag = document.createElement('div')
     }
 
     parent.appendChild(
@@ -17,17 +29,17 @@ export default ((window) => {
         .filter(entry => entry)
         .reduce(
           (element, entry) => {
-            if (typeof entry === 'string') {
+            if (isString(entry)) {
               element.appendChild(document.createTextNode(entry))
               return element
             }
 
-            if (entry instanceof Node) {
+            if (isNode(entry)) {
               element.appendChild(entry)
               return element
             }
 
-            if (entry instanceof Array) {
+            if (Array.isArray(entry)) {
               return render(entry, element)
             }
 
@@ -51,7 +63,7 @@ export default ((window) => {
 
             return element
           },
-          document.createElement(tagName)
+          tag
         )
     )
 

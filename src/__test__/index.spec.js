@@ -78,6 +78,22 @@ describe('xt', () => {
     mockCreateElement.mockReset()
     mockCreateElement.mockRestore()
   })
+
+  it('should accept element as first array argument', () => {
+    root.appendChild(xt([document.createElement('div'), 'foo']))
+    const actual = root.innerHTML
+    expect(actual).toBe('<div>foo</div>')
+  })
+
+  it('should not use Document Fragment as element when first array argument', () => {
+    const mockDocFrag = document.createDocumentFragment()
+    const mockDiv = document.createElement('span')
+    mockDiv.innerHTML = 'bar'
+    mockDocFrag.appendChild(mockDiv)
+    root.appendChild(xt([mockDocFrag, 'foo']))
+    const actual = root.innerHTML
+    expect(actual).toBe('<div><span>bar</span>foo</div>')
+  })
 })
 
 describe.skip('h', () => {})
