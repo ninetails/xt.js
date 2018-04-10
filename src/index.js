@@ -70,5 +70,12 @@ export default ((window) => {
     return parent
   }
 
+  render.h = (...args) => {
+    if (typeof args[0] === 'function') {
+      return [...args].shift()({ ...(args[1] || {}), children: args[2] || undefined })
+    }
+    return [...args]
+  }
+
   return render
 })(window || global)
