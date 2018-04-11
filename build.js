@@ -2,6 +2,7 @@ import fs from 'fs'
 import { rollup } from 'rollup'
 import babel from 'rollup-plugin-babel'
 import commonjs from 'rollup-plugin-commonjs'
+import replace from 'rollup-plugin-replace'
 import resolve from 'rollup-plugin-node-resolve'
 import uglify from 'rollup-plugin-uglify'
 import pkg from './package.json'
@@ -9,13 +10,15 @@ import pkg from './package.json'
 const bundles = [
   {
     format: 'cjs',
+    input: 'src/common.js',
     ext: '.js',
-    plugins: [],
+    plugins: [replace({ 'process.env.ES_MODULES': true })],
     babelPresets: ['@babel/preset-stage-1'],
     babelPlugins: [
-      'transform-es2015-destructuring',
-      'transform-es2015-function-name',
-      'transform-es2015-parameters'
+      '@babel/plugin-transform-destructuring',
+      '@babel/plugin-transform-function-name',
+      '@babel/plugin-transform-parameters',
+      '@babel/plugin-proposal-object-rest-spread'
     ]
   },
   {
@@ -24,32 +27,36 @@ const bundles = [
     plugins: [],
     babelPresets: ['@babel/preset-stage-1'],
     babelPlugins: [
-      'transform-es2015-destructuring',
-      'transform-es2015-function-name',
-      'transform-es2015-parameters'
+      '@babel/plugin-transform-destructuring',
+      '@babel/plugin-transform-function-name',
+      '@babel/plugin-transform-parameters',
+      '@babel/plugin-proposal-object-rest-spread'
     ]
   },
   {
     format: 'cjs',
+    input: 'src/common.js',
     ext: '.browser.js',
     plugins: [],
     babelPresets: [['@babel/preset-env', { 'modules': false }], '@babel/preset-stage-1'],
-    babelPlugins: []
+    babelPlugins: ['@babel/plugin-proposal-object-rest-spread']
   },
   {
     format: 'umd',
+    input: 'src/common.js',
     ext: '.js',
     plugins: [],
     babelPresets: [['@babel/preset-env', { 'modules': false }], '@babel/preset-stage-1'],
-    babelPlugins: [],
+    babelPlugins: ['@babel/plugin-proposal-object-rest-spread'],
     moduleName: 'xt'
   },
   {
     format: 'umd',
+    input: 'src/common.js',
     ext: '.min.js',
     plugins: [uglify()],
     babelPresets: [['@babel/preset-env', { 'modules': false }], '@babel/preset-stage-1'],
-    babelPlugins: [],
+    babelPlugins: ['@babel/plugin-proposal-object-rest-spread'],
     moduleName: 'xt',
     minify: true
   }
@@ -63,12 +70,12 @@ for (const config of bundles) {
     file: `dist/${config.moduleName || 'index'}${config.ext}`,
     format: config.format,
     name: config.moduleName,
-    sourcemap: !config.minify
+    sourcemap: true
   }
 
   promise = promise.then(
     () => rollup({
-      input: 'src/index.js',
+      input: config.input || 'src/index.js',
       plugins: [
         resolve({
           browser: true,
@@ -81,7 +88,8 @@ for (const config of bundles) {
           presets: config.babelPresets,
           plugins: config.babelPlugins
         })
-      ].concat(config.plugins)
+      ]
+        .concat(config.plugins)
     })
       .then(bundle => bundle.generate(output).then(() => bundle.write(output)))
   )

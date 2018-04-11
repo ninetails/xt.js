@@ -1,8 +1,9 @@
 /** @jsx xt.h */
-import xt from '..'
+import createXt from '../createXt'
 
 describe('xt', () => {
-  const { document, DocumentFragment } = window || global
+  const xt = createXt(global)
+  const { document, DocumentFragment } = global
   const getRoot = () => document.getElementById('root')
   let root
 
@@ -63,21 +64,36 @@ describe('xt', () => {
     expect(root.firstChild.style).toMatchObject({ backgroundColor: 'red' })
   })
 
-  it('should add events', () => {
-    const mockClickEvent = jest.fn()
-    const mockLoadEvent = jest.fn()
-    const mockDiv = document.createElement('div')
-    const mockCreateElement = jest.spyOn(document, 'createElement')
-      .mockImplementation(() => mockDiv)
-    const mockAddEventListener = jest.spyOn(mockDiv, 'addEventListener')
+  it('should add click event', () => {
+    expect.assertions(4)
 
-    root.appendChild(xt(['div', { on: { click: mockClickEvent, load: mockLoadEvent } }]))
-    expect(root.innerHTML).toBe('<div></div>')
-    expect(mockAddEventListener).toHaveBeenCalledWith('click', mockClickEvent)
-    expect(mockAddEventListener).toHaveBeenCalledWith('load', mockLoadEvent)
+    return (new Promise(resolve => {
+      const button = document.createElement('button')
+      const spy = jest.spyOn(button, 'addEventListener')
+      const mockEvent = document.createEvent('HTMLEvents')
+      mockEvent.initEvent('click', false, true)
+      root.appendChild(xt([
+        button,
+        {
+          onClick: function (event) {
+            resolve({
+              button,
+              context: this,
+              event,
+              mockEvent,
+              spy
+            })
+          }
+        }
+      ]))
 
-    mockCreateElement.mockReset()
-    mockCreateElement.mockRestore()
+      button.dispatchEvent(mockEvent)
+    })).then(({ button, context, event, mockEvent, spy }) => {
+      expect(root.innerHTML).toBe('<button></button>')
+      expect(context).toBe(button)
+      expect(spy.mock.calls[0][0]).toBe('click')
+      expect(mockEvent).toBe(event)
+    })
   })
 
   it('should accept element as first array argument', () => {
@@ -128,7 +144,6 @@ describe('xt', () => {
     })
 
     it('should accept custom element', () => {
-      // eslint-disable-next-line no-unused-vars
       const CustomComponent = ({ prop, children }) => <div data-prop={prop}>{children}</div>
       root.appendChild(xt(<div><CustomComponent prop="value">foo</CustomComponent></div>))
       const actual = root.innerHTML
@@ -136,7 +151,6 @@ describe('xt', () => {
     })
 
     it('should accept custom element (empty children)', () => {
-      // eslint-disable-next-line no-unused-vars
       const CustomComponent = ({ prop, children }) => <div data-prop={prop}>{children}</div>
       root.appendChild(xt(<div><CustomComponent prop="value" /></div>))
       const actual = root.innerHTML
@@ -144,28 +158,39 @@ describe('xt', () => {
     })
 
     it('should accept custom element (empty children & prop)', () => {
-      // eslint-disable-next-line no-unused-vars
       const CustomComponent = ({ prop, children }) => <div>{children}</div>
       root.appendChild(xt(<div><CustomComponent /></div>))
       const actual = root.innerHTML
       expect(actual).toBe('<div><div></div></div>')
     })
 
-    it('should bind events', () => {
-      const mockClickEvent = jest.fn()
-      const mockLoadEvent = jest.fn()
-      const mockDiv = document.createElement('div')
-      const mockCreateElement = jest.spyOn(document, 'createElement')
-        .mockImplementation(() => mockDiv)
-      const mockAddEventListener = jest.spyOn(mockDiv, 'addEventListener')
+    it('should add click event', () => {
+      expect.assertions(3)
 
-      root.appendChild(xt(<div on={{ click: mockClickEvent, load: mockLoadEvent }}/>))
-      expect(root.innerHTML).toBe('<div></div>')
-      expect(mockAddEventListener).toHaveBeenCalledWith('click', mockClickEvent)
-      expect(mockAddEventListener).toHaveBeenCalledWith('load', mockLoadEvent)
+      return (new Promise(resolve => {
+        let button
 
-      mockCreateElement.mockReset()
-      mockCreateElement.mockRestore()
+        const mockEvent = document.createEvent('HTMLEvents')
+        mockEvent.initEvent('click', false, true)
+
+        function mockClickEvent (event) {
+          resolve({
+            button,
+            context: this,
+            event,
+            mockEvent
+          })
+        }
+
+        root.appendChild(xt(<button onClick={mockClickEvent} />))
+        button = root.querySelector('button')
+
+        button.dispatchEvent(mockEvent)
+      })).then(({ button, context, event, mockEvent }) => {
+        expect(root.innerHTML).toBe('<button></button>')
+        expect(context).toBe(button)
+        expect(event).toBe(mockEvent)
+      })
     })
   })
 })
