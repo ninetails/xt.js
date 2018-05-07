@@ -112,6 +112,12 @@ describe('xt', () => {
     expect(actual).toBe('<div><span>bar</span>foo</div>')
   })
 
+  it('should receive object as mapped params', () => {
+    root.appendChild(xt({ data: ['div', 'foo'], parent: document.createElement('div') }))
+    const actual = root.innerHTML
+    expect(actual).toBe('<div><div>foo</div></div>')
+  })
+
   describe('.h (jsx)', () => {
     it('should create div', () => {
       root.appendChild(xt(<div>foo</div>))
